@@ -19,3 +19,11 @@ dotnet add admin-portal.Tests/admin-portal.Tests.csproj reference admin-portal/a
 ```bash
 dotnet test
 ```
+
+## Install testing dependencies
+```bash
+dotnet add package Microsoft.EntityFrameworkCore.InMemory --version 8.0.0
+
+# restore (re-install) dependencies
+dotnet restore
+```
