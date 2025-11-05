@@ -25,7 +25,17 @@ namespace AdminPortal.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllEmployees()
         {
-            var employees = await dbContext.Employees.ToListAsync();
+            var employees = await dbContext.Employees
+                .Include(e => e.Department)
+                .Select(e => new EmployeeDto
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Email = e.Email,
+                    DepartmentId = e.DepartmentId,
+                    Department = e.Department == null ? null : new DepartmentDto { Id = e.Department.Id, Name = e.Department.Name }
+                })
+                .ToListAsync();
 
             return Ok(employees);
         }
@@ -33,7 +43,18 @@ namespace AdminPortal.Controllers
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetEmployeeById(Guid id)
         {
-            var employee = await dbContext.Employees.FindAsync(id);
+            var employee = await dbContext.Employees
+                .Include(e => e.Department)
+                .Where(e => e.Id == id)
+                .Select(e => new EmployeeDto
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Email = e.Email,
+                    DepartmentId = e.DepartmentId,
+                    Department = e.Department == null ? null : new DepartmentDto { Id = e.Department.Id, Name = e.Department.Name }
+                })
+                .FirstOrDefaultAsync();
 
             if (employee == null)
             {
@@ -46,12 +67,25 @@ namespace AdminPortal.Controllers
         [HttpPost]
         public async Task<IActionResult> AddEmployee(AddEmployeeDto addEmployeeDto)
         {
+            // validate department exist if departmentId is provided
+            if (addEmployeeDto.DepartmentId.HasValue)
+            {
+                var departmentExists = await dbContext.Departments
+                    .AnyAsync(d => d.Id == addEmployeeDto.DepartmentId);
+
+                if (!departmentExists)
+                {
+                    return BadRequest("Department does not exist");
+                }
+            }
+
             var employeeEntity = new Employee()
             {
                 Name = addEmployeeDto.Name,
                 Email = addEmployeeDto.Email,
                 Phone = addEmployeeDto.Phone,
                 Salary = addEmployeeDto.Salary,
+                DepartmentId = addEmployeeDto.DepartmentId
             };
 
             await dbContext.Employees.AddAsync(employeeEntity);
@@ -72,10 +106,23 @@ namespace AdminPortal.Controllers
                 return NotFound();
             }
 
+            // Validate department exists if DepartmentId is being updated
+            if (updateEmployeeDto.DepartmentId.HasValue)
+            {
+                var departmentExists = await dbContext.Departments
+                    .AnyAsync(d => d.Id == updateEmployeeDto.DepartmentId.Value);
+
+                if (!departmentExists)
+                {
+                    return BadRequest("Department not found");
+                }
+            }
+
             employee.Name = updateEmployeeDto.Name ?? employee.Name;
             employee.Email = updateEmployeeDto.Email ?? employee.Email;
             employee.Phone = updateEmployeeDto.Phone ?? employee.Phone;
             employee.Salary = updateEmployeeDto.Salary ?? employee.Salary;
+            employee.DepartmentId = updateEmployeeDto.DepartmentId ?? employee.DepartmentId;
 
             await dbContext.SaveChangesAsync();
 
