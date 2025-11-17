@@ -1,8 +1,22 @@
 # CREATE A WEBAPI PROJECT
 
+## Create a sub directory for the project
+```bash
+mkdir admin-portal
+```
+
+## Create solution
+```bash
+# create solution
+dotnet new sln -n admin-portal
+
+# add project to solution
+dotnet sln add admin-portal.csproj
+```
+
 ## Create webapi with controllers
 ```bash
-dotnet new webapi --use-controllers -n MyWebApi
+dotnet new webapi --use-controllers -n admin-portal
 ```
 
 ## Install EF dependencies
